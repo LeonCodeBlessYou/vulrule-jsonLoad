@@ -61,7 +61,7 @@ const categorizedRules = rules.reduce((acc, rule) => {
                 const apiName = rule.api_name;
                 return (
                   <li>
-                    <a href={`${import.meta.env.BASE_URL}rule/${apiName}`}>{rule.title}</a>
+                    <a href={`${import.meta.env.BASE_URL}rule/${apiName}`}>{`${apiName}`}</a>
                   </li>
                 );
               })}
