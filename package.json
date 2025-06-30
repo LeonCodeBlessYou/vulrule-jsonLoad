@@ -8,7 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist -r git@github.com:LeonCodeBlessYou/vulrule-jsonLoad.git"
   },
   "dependencies": {
     "astro": "^5.10.1",
