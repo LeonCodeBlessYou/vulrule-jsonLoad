@@ -59,9 +59,7 @@ const categorizedRules = rules.reduce((acc, rule) => {
             <ul>
               {categorizedRules[libName][toolName].map(rule => (
                 <li>
-                  <a href={`/rule/${rule.api_name}`}>
-                    {rule.api_name}
-                  </a>
+                  <a href={`${import.meta.env.BASE_URL}rule/${rule.api}`}>{rule.title}</a>
                 </li>
               ))}
             </ul>
