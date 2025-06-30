@@ -1,0 +1,25 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>APISpecGen - Linux kernel - __drmm_universal_plane_alloc</title></head> <body> <header> <h1>APISpecGen - Linux kernel - __drmm_universal_plane_alloc</h1> <nav> <a href="/vulrule-jsonLoad/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>__drmm_universal_plane_alloc returns error pointer on failure, use IS_ERR to check the return value</p> <p><strong>Label: </strong>return value check</p> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>
+import cpp
+import semmle.code.cpp.controlflow.SSA
+
+
+class EVPFunctionCall extends FunctionCall {
+  EVPFunctionCall() {
+    this.getTarget().hasName(&quot;__drmm_universal_plane_alloc&quot;)
+  }
+}
+
+
+predicate isErrCheckFunction(Function f) {
+  f.hasName(&quot;IS_ERR&quot;) 
+}
+
+from EVPFunctionCall call, ValueAccess ret
+where
+  ret = call.getAnAccess() and
+  not exists(FunctionCall check |
+    isErrCheckFunction(check.getTarget()) and
+    check.getArgument(0).getAChild*() = ret
+  )
+select call, &quot;The return value of __drmm_universal_plane_alloc is not checked with IS_ERR.&quot;
+    </pre> </div> </main> </body></html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advance - libpcap - pcap_lookupdev</title></head> <body> <header> <h1>Advance - libpcap - pcap_lookupdev</h1> <nav> <a href="/vulrule-jsonLoad/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>This interface is obsoleted by pcap_findalldevs(3PCAP)
-https://www.tcpdump.org/manpages/pcap_lookupdev.3pcap.html</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>deprecated API</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-477</h4> <h4>QLCode:</h4> <pre>import semmle.code.cpp.dataflow.DataFlow
+https://www.tcpdump.org/manpages/pcap_lookupdev.3pcap.html</p> <p><strong>Label: </strong>deprecated API</p> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-477</h4> <h4>QLCode:</h4> <pre>import semmle.code.cpp.dataflow.DataFlow
 
 from FunctionCall fc
 where fc.getTarget().hasQualifiedName(&quot;pcap_lookupdev&quot;)
