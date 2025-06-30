@@ -1,3 +1,18 @@
+# How to modify the data and publish new Github Page
+1. Modify the `$VULRULE-JSONLOAD/src/data/data.json`.
+2. Run `npm run dev` to start local testing.
+3. Run `npm run build` to build resource for generating the Github Page. `$VULRULE-JSONLOAD/dist/index.html` and `$VULRULE-JSONLOAD/dist/rule/` are the flags of a successful build.
+4. Run `npm run deploy` to publish the Github page.
+5. Visit `https://leoncodeblessyou.github.io/vulrule-jsonLoad`
+
+#### When rebuild the Github Page, Run:
+```
+rm -rf dist         
+npm run build
+npm run deploy
+```
+
+
 # Astro Starter Kit: Minimal
 
 ```sh
