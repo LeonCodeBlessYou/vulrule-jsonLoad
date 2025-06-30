@@ -33,7 +33,8 @@ const rule = rules.find(r => r.api_name === normalizedApi || r.api_name === api)
   <main>
     <h2>Rule Profile</h2>
     <p><strong>Description: </strong>{rule.rule.Description}</p>
-
+    <p><strong>Lib Name: </strong>{rule.lib_name}</p>
+    <p><strong>Tool Name: </strong>{rule.tool_name}</p>
     <p><strong>Label: </strong>{Array.isArray(rule.rule.Label) ? rule.rule.Label.join(', ') : 'N/A'}</p>
     <p><strong>Parameter Index: </strong>{Array.isArray(rule.rule['Parameter-index']) ? rule.rule['Parameter-index'].join(', ') : 'N/A'}</p>
 
