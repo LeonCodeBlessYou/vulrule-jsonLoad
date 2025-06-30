@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>libpcap - Advance - pcap_dump</title></head> <body> <header> <h1>libpcap - Advance - pcap_dump</h1> <nav> <a href="/vulrule-jsonLoad/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>If called directly, the user parameter is of type pcap_dumper_t as returned by pcap_dump_open().  
-https://www.tcpdump.org/manpages/pcap_dump.3pcap.html</p> <p><strong>Label: </strong>param-type</p> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：</h4> <h4>QLCode:</h4> <pre>import cpp
+https://www.tcpdump.org/manpages/pcap_dump.3pcap.html</p> <p><strong>Lib Name: </strong>libpcap</p> <p><strong>Tool Name: </strong>Advance</p> <p><strong>Label: </strong>param-type</p> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：</h4> <h4>QLCode:</h4> <pre>import cpp
 
 from FunctionCall fc
 where fc.getTarget().hasQualifiedName(&quot;pcap_dump&quot;)
