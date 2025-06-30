@@ -1,0 +1,29 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advance - libpcap - pcap_fileno</title></head> <body> <header> <h1>Advance - libpcap - pcap_fileno</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>If p refers to a ``savefile&#39;&#39; that was opened using functions such as pcap_open_offline(3PCAP) or pcap_fopen_offline(3PCAP), a ``dead&#39;&#39; pcap_t opened using pcap_open_dead(3PCAP), or a pcap_t that was created with pcap_create() but that has not yet been activated with pcap_activate(), it returns PCAP_ERROR. https://www.tcpdump.org/manpages/pcap_fileno.3pcap.html
+The fstat() function shall obtain information about an open file associated with the file descriptor fildes, and shall write it to the area pointed to by buf.http://man7.org/linux/man-pages/man3/fstat.3p.html
+pcap_fileno对pcap_open_offline创建的savefile会返回error，没有检查就作为另一个api的输入</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>return value check</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>import cpp
+import semmle.code.cpp.customs.non_zero
+import semmle.code.cpp.dataflow.TaintTracking
+import semmle.code.cpp.dataflow.DataFlow
+import semmle.code.cpp.security.Security
+import DataFlow::PathGraph
+
+class TestConfiguration extends TaintTracking::Configuration {
+  TestConfiguration() { this = &quot;TestConfiguration&quot; }
+
+  override predicate isSource(DataFlow::Node source) {
+    exists(FunctionCall fc |
+      fc.getTarget().hasName(&quot;pcap_fileno&quot;)
+      and fc = source.asExpr()
+    )
+  }
+
+  override predicate isSink(DataFlow::Node sink) {
+    exists(| sink.asExpr().getEnclosingStmt() instanceof IfStmt)
+  }
+}
+
+from FunctionCall fc, TestConfiguration cfg, DataFlow::PathNode source, DataFlow::PathNode sink
+
+where fc.getTarget().hasQualifiedName(&quot;pcap_fileno&quot;)
+    and not exists(|cfg.hasFlowPath(source, sink) and source.getNode().asExpr() = fc)
+select fc.getLocation()</pre> </div> </main> </body></html>

@@ -1,0 +1,13 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AURC - openssl - DSA_sign</title></head> <body> <header> <h1>AURC - openssl - DSA_sign</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>DSA_sign() and DSA_sign_setup() return 1 on success, 0 on error. DSA_verify() returns 1 for a valid signature, 0 for an incorrect signature and -1 on error. The error codes can be obtained by L&lt;ERR_get_error(3)&gt;.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>return value check</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>import cpp
+
+class OpenSSLFunctionCall extends FunctionCall {
+  OpenSSLFunctionCall() {
+    this.getTarget().hasName(&quot;DSA_sign&quot;)
+  }
+}
+
+from OpenSSLFunctionCall call, UnaryOperation uop
+where
+  uop.getOperator() = &quot;!&quot; and
+  uop.getOperand() = call.getAnAccess()
+select uop, &quot;This negation checks the return value of DSA_sign.&quot;</pre> </div> </main> </body></html>

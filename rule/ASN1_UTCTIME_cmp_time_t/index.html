@@ -1,0 +1,13 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AURC - openssl - ASN1_UTCTIME_cmp_time_t</title></head> <body> <header> <h1>AURC - openssl - ASN1_UTCTIME_cmp_time_t</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>ASN1_TIME_cmp_time_t() and ASN1_UTCTIME_cmp_time_t() return -1 if I&lt;s&gt; is before I&lt;t&gt;, 0 if I&lt;s&gt; equals I&lt;t&gt;, or 1 if I&lt;s&gt; is after I&lt;t&gt;. -2 is returned on error.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>return value check</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>import cpp
+
+class OpenSSLFunctionCall extends FunctionCall {
+  OpenSSLFunctionCall() {
+    this.getTarget().hasName(&quot;ASN1_UTCTIME_cmp_time_t&quot;)
+  }
+}
+
+from OpenSSLFunctionCall call, UnaryOperation uop
+where
+  uop.getOperator() = &quot;!&quot; and
+  uop.getOperand() = call.getAnAccess()
+select uop, &quot;This negation checks the return value of ASN1_UTCTIME_cmp_time_t.&quot;</pre> </div> </main> </body></html>

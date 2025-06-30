@@ -1,0 +1,25 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ChatDetector - Ldap - ldap_extended_operation_s</title></head> <body> <header> <h1>ChatDetector - Ldap - ldap_extended_operation_s</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>Parameter 6 of ldap_extended_operation_s must be released by calling ldap_memfree, with the same object passed as the 1-th argument to ldap_memfree</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>api pair</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>5</p> <div> <h4>CWE Type：CWE-404</h4> <h4>QLCode:</h4> <pre>import cpp
+import semmle.code.cpp.dataflow.new.DataFlow
+
+
+DataFlow::Node getSource(FunctionCall fc){
+  fc.getTarget().hasName(&quot;ldap_extended_operation_s&quot;)
+  and result.asExpr() = fc.getArgument(5)
+}
+
+DataFlow::Node getSink(FunctionCall fc){
+  fc.getTarget().hasName(&quot;ldap_memfree&quot;)
+  and result.asExpr() = fc.getArgument(0)
+}
+
+FunctionCall freeTarget(FunctionCall malloc){
+  DataFlow::localFlow(getSource(malloc), getSink(result))
+}
+
+from FunctionCall fc
+where fc.getTarget().hasName(&quot;ldap_extended_operation_s&quot;)
+      and not exists(
+        FunctionCall free| 
+        free = freeTarget(fc)
+      )
+select fc.getLocation()</pre> </div> </main> </body></html>

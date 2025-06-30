@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GPTAid - openssl - DH_free</title></head> <body> <header> <h1>GPTAid - openssl - DH_free</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>Parameter 1 must not be freed later.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>api pair</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>0</p> <div> <h4>CWE Type：CWE-415</h4> <h4>QLCode:</h4> <pre>/**
+ * @name doublefree
+ * @description description
+ * @kind problem
+ * @problem.severity error
+ * @precision high
+ * @id cpp/doublefree
+ * @tags security
+ */
+
+ import cpp
+ import semmle.code.cpp.dataflow.TaintTracking
+ import semmle.code.cpp.dataflow.DataFlow
+ import semmle.code.cpp.security.Security
+ import semmle.code.cpp.controlflow.Guards
+ import semmle.code.cpp.valuenumbering.GlobalValueNumbering
+ 
+Expr getMallocExpr(FunctionCall fc)
+{
+    exists(Expr e | 
+        result = e
+        and
+        (
+            (fc.getTarget().hasName(&quot;malloc&quot;) and e = fc)
+ or (fc.getTarget().hasName(&quot;OPENSSL_sk_reserve&quot;) and e = fc.getArgument(0))
+ or (fc.getTarget().hasName(&quot;PKCS12_parse&quot;) and e = fc.getArgument(4))
+ or (fc.getTarget().hasName(&quot;EVP_PKEY_get_bn_param&quot;) and e = fc.getArgument(2))
+ or (fc.getTarget().hasName(&quot;X509_STORE_add_cert&quot;) and e = fc.getArgument(1))
+        // TODO-addMallocHere
+        )
+    )
+}
+
+Expr getFreeExpr(FunctionCall fc)
+{
+
+        result = fc.getArgument(0)
+        and
+        (
+            fc.getTarget().hasName(&quot;DH_free&quot;)
+        // or
+        //  fc.getTarget().hasName(&quot;target&quot;)
+        // TODO-addFreeHere
+        )
+}
+ predicate isSourceFC(FunctionCall fc)
+ {
+
+ fc.getTarget().hasName(&quot;malloc&quot;)
+ or fc.getTarget().hasName(&quot;OPENSSL_sk_reserve&quot;)
+ or fc.getTarget().hasName(&quot;PKCS12_parse&quot;)
+ or fc.getTarget().hasName(&quot;EVP_PKEY_get_bn_param&quot;)
+ or fc.getTarget().hasName(&quot;X509_STORE_add_cert&quot;)
+ }
+
+ predicate isSinkFC(FunctionCall fc)
+ {
+ fc.getTarget().hasName(&quot;DH_free&quot;)
+//  or
+//  fc.getTarget().hasName(&quot;target&quot;)
+ }
+ DataFlow::Node getSinkNode(FunctionCall fc)
+ {
+     result.asExpr() = getFreeExpr(fc)
+     or
+     result.asDefiningArgument() = getFreeExpr(fc)
+ }
+    
+ DataFlow::Node getSourceNode(FunctionCall fc)
+ {
+     result.asExpr() = getMallocExpr(fc)
+     or
+     result.asDefiningArgument() = getMallocExpr(fc)
+ }
+ class MallocConfiguration extends DataFlow::Configuration {
+    MallocConfiguration() { this = &quot;MallocConfiguration&quot; }
+   
+     override predicate isSource(DataFlow::Node source) {
+       exists(FunctionCall fc | 
+        isSourceFC(fc)
+        and
+        source = getSourceNode(fc)
+         )
+         or
+          exists(AssignExpr ae| 
+             ae.getAChild() = source.asExpr()
+             or ae.getAChild() = source.asDefiningArgument()
+             )
+     }
+     override predicate isSink(DataFlow::Node sink) {
+       // sink.asExpr()
+       exists(FunctionCall fc |
+         isSinkFC(fc)
+         and sink = getSinkNode(fc)
+       )
+     }
+   }
+
+//  predicate isLocalVariable(Expr e) {
+//      exists(LocalVariable lv | 
+//         exists(FunctionCall fc| 
+//             fc = e and
+//             exists(AssignExpr ae | 
+//             ae.getAChild() = fc and lv.getAnAccess() = ae.getLValue())
+//         )
+//             or
+//             lv.getAnAccess() = e
+//             )
+//  }
+ 
+ from FunctionCall target, FunctionCall free
+ where
+isSinkFC(target)
+and exists(FunctionCall malloc | isSourceFC(malloc) and free.getAPredecessor*() = malloc)
+and
+isSinkFC(free)
+   and free.getASuccessor*() = target
+   and not free = target
+and exists(Variable v | 
+    
+    v.getAnAccess() = getFreeExpr(target)
+    and v.getAnAccess() = getFreeExpr(free)
+//  and 
+// isLocalVariable(getMallocExpr(target))
+ and not 
+ exists(MallocConfiguration cfg, Expr malloc| 
+    // isSourceFC(malloc)
+    free.getASuccessor*() = malloc
+    and malloc.getASuccessor*() = target
+    and
+    cfg.hasFlow(DataFlow::exprNode(malloc), getSinkNode(target))
+    )
+)
+ select target, &quot;First Freed in &quot; + free.getLocation().toString() + &quot;. Double free in &quot; + target.getLocation().toString()
+ </pre> </div> </main> </body></html>

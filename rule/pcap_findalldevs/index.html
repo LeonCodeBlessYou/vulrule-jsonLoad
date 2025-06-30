@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advance - libpcap - pcap_findalldevs</title></head> <body> <header> <h1>Advance - libpcap - pcap_findalldevs</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>The list of devices must be freed with pcap_freealldevs(3PCAP), which frees the list pointed to by alldevs.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>mem leakage</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-772</h4> <h4>QLCode:</h4> <pre>import cpp
+import semmle.code.cpp.dataflow.TaintTracking
+import semmle.code.cpp.dataflow.DataFlow
+import semmle.code.cpp.security.Security
+import DataFlow::PathGraph
+class TestConfiguration extends TaintTracking::Configuration {
+  TestConfiguration() { this = &quot;TestConfiguration&quot; }
+
+  override predicate isSource(DataFlow::Node source) {
+    exists(FunctionCall fc |
+      fc.getTarget().hasName(&quot;pcap_findalldevs&quot;)
+      and ( (fc.getArgument(0) = source.asDefiningArgument() and 0 &gt;= 0) or
+            (fc = source.asExpr() and 0 = -1)
+          )
+    )
+  }
+
+  override predicate isSink(DataFlow::Node sink) {
+    exists(FunctionCall fc |
+      fc.getTarget().hasName(&quot;pcap_freealldevs&quot;)
+      and fc.getAnArgument() = sink.asExpr()
+    )
+  }
+}
+from TestConfiguration cfg, FunctionCall fc
+where fc.getTarget().hasName(&quot;pcap_findalldevs&quot;)
+      and not exists(DataFlow::PathNode source, DataFlow::PathNode sink|cfg.hasFlowPath(source, sink) and (
+           (fc.getArgument(0) = source.getNode().asDefiningArgument() and 0 &gt;= 0) or
+           (fc = source.getNode().asExpr() and 0 = -1)
+        )
+      )
+select fc.getLocation()</pre> </div> </main> </body></html>

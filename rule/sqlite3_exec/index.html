@@ -1,0 +1,44 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advance - libsqlite3 - sqlite3_exec</title></head> <body> <header> <h1>Advance - libsqlite3 - sqlite3_exec</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>To avoid memory leaks, the application should invoke sqlite3_free() on error message strings returned through the 5th parameter of sqlite3_exec() after the error message string is no longer needed.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>mem leakage</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-772</h4> <h4>QLCode:</h4> <pre>import cpp
+import semmle.code.cpp.dataflow.TaintTracking
+import semmle.code.cpp.dataflow.DataFlow
+import semmle.code.cpp.security.Security
+import DataFlow::PathGraph
+class TestConfiguration extends TaintTracking::Configuration {
+  TestConfiguration() { this = &quot;TestConfiguration&quot; }
+
+  override predicate isSource(DataFlow::Node source) {
+    exists(FunctionCall fc, MacroInvocation mi |
+      (fc.getTarget().hasQualifiedName(&quot;sqlite3_exec&quot;) or (
+          mi.getMacroName() = &quot;sqlite3_exec&quot;
+          and fc.getTarget().hasName(mi.getMacro().getBody())
+         )
+      )
+      and ((fc.getArgument( 5-1) = source.asDefiningArgument() and  5-1 &gt;= 0) or
+        (fc = source.asExpr() and  5-1 = -1)
+      )
+    )
+  }
+override predicate isSink(DataFlow::Node sink) {
+  exists(FunctionCall fc, MacroInvocation mi |
+      (fc.getTarget().hasName(&quot;sqlite3_free&quot;) or (
+        mi.getMacroName() = &quot;sqlite3_free&quot;
+        and fc.getTarget().hasName(mi.getMacro().getBody())
+       )
+      )
+      and fc.getAnArgument() = sink.asExpr()
+    )
+  }
+}
+from TestConfiguration cfg, FunctionCall fc, MacroInvocation mi
+where (fc.getTarget().hasQualifiedName(&quot;sqlite3_exec&quot;) or (
+          mi.getMacroName() = &quot;sqlite3_exec&quot;
+          and fc.getTarget().hasName(mi.getMacro().getBody())
+         )
+      )
+      and not exists(DataFlow::PathNode source, DataFlow::PathNode sink|cfg.hasFlowPath(source, sink) and
+        ((fc.getArgument( 5-1) = source.getNode().asDefiningArgument() and  5-1 &gt;= 0) or
+          (fc = source.getNode().asExpr() and  5-1 = -1)
+        )
+      )
+      and not (fc.getArgument( 5-1).isConstant() and  5-1&gt;=0)
+select fc.getLocation()</pre> </div> </main> </body></html>

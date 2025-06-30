@@ -1,0 +1,13 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AURC - openssl - EVP_PKEY_get_default_digest_name</title></head> <body> <header> <h1>AURC - openssl - EVP_PKEY_get_default_digest_name</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>EVP_PKEY_get_default_digest_name() and EVP_PKEY_get_default_digest_nid() both return 1 if the message digest is advisory (that is other digests can be used) and 2 if it is mandatory (other digests can not be used). They return 0 or a negative value for failure.  In particular a return value of -2 indicates the operation is not supported by the public key algorithm.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>return value check</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>import cpp
+
+class OpenSSLFunctionCall extends FunctionCall {
+  OpenSSLFunctionCall() {
+    this.getTarget().hasName(&quot;EVP_PKEY_get_default_digest_name&quot;)
+  }
+}
+
+from OpenSSLFunctionCall call, UnaryOperation uop
+where
+  uop.getOperator() = &quot;!&quot; and
+  uop.getOperand() = call.getAnAccess()
+select uop, &quot;This negation checks the return value of EVP_PKEY_get_default_digest_name.&quot;</pre> </div> </main> </body></html>

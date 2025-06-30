@@ -1,0 +1,13 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AURC - openssl - X509_REQ_verify_ex</title></head> <body> <header> <h1>AURC - openssl - X509_REQ_verify_ex</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>X509_verify(), X509_REQ_verify_ex(), X509_REQ_verify() and X509_CRL_verify() return 1 if the signature is valid and 0 if the signature check fails. If the signature could not be checked at all because it was ill-formed, the certificate or the request was not complete or some other error occurred then -1 is returned.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>return value check</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>import cpp
+
+class OpenSSLFunctionCall extends FunctionCall {
+  OpenSSLFunctionCall() {
+    this.getTarget().hasName(&quot;X509_REQ_verify_ex&quot;)
+  }
+}
+
+from OpenSSLFunctionCall call, UnaryOperation uop
+where
+  uop.getOperator() = &quot;!&quot; and
+  uop.getOperand() = call.getAnAccess()
+select uop, &quot;This negation checks the return value of X509_REQ_verify_ex.&quot;</pre> </div> </main> </body></html>

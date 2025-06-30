@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advance - libpcap - pcap_loop</title></head> <body> <header> <h1>Advance - libpcap - pcap_loop</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>pcap_loop() returns 0 if cnt is exhausted or if, when reading from a ``savefile&#39;&#39;, no more packets are available. It returns PCAP_ERROR if an error occurs or PCAP_ERROR_BREAK if the loop terminated due to a call to pcap_breakloop() before any packets were processed. It does not return when live packet buffer timeouts occur; instead, it attempts to read more packets.
+https://www.tcpdump.org/manpages/pcap_loop.3pcap.html</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>return value check</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>import semmle.code.cpp.dataflow.DataFlow
+class TestConfiguration extends DataFlow::Configuration {
+    TestConfiguration() { this = &quot;TestConfiguration&quot; }
+    override predicate isSource(DataFlow::Node source) {
+        exists(FunctionCall fc,  MacroInvocation mi |
+            (fc.getTarget().hasQualifiedName(&quot;pcap_loop&quot;) or (
+                mi.getMacroName() = &quot;pcap_loop&quot;
+                and fc.getTarget().hasName(mi.getMacro().getBody())
+              )
+            )
+            and fc = source.asExpr()
+        )
+    }
+    override predicate isSink(DataFlow::Node sink) {
+        exists(| sink.asExpr().getEnclosingStmt() instanceof IfStmt
+            and (sink.asExpr().getParent() instanceof ComparisonOperation
+                or sink.asExpr().getParent() instanceof NotExpr
+                or sink.asExpr().getParent() instanceof IfStmt
+            )
+        )
+    }
+}
+from TestConfiguration cfg, FunctionCall fc, MacroInvocation mi
+//function not checked
+where (fc.getTarget().hasQualifiedName(&quot;pcap_loop&quot;) or (
+        mi.getMacroName() = &quot;pcap_loop&quot;
+        and fc.getTarget().hasName(mi.getMacro().getBody())
+    ))
+    and (
+        (fc instanceof ExprInVoidContext)
+        or not exists(Expr source1, Expr sink1|cfg.hasFlow(DataFlow::exprNode(source1), DataFlow::exprNode(sink1)) and fc = source1)
+    )
+select fc.getLocation()</pre> </div> </main> </body></html>

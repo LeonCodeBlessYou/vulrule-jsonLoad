@@ -1,0 +1,187 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GPTAid - libxml2 - xmlTextReaderRelaxNGValidateCtxt</title></head> <body> <header> <h1>GPTAid - libxml2 - xmlTextReaderRelaxNGValidateCtxt</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>Parameter 1 must be freed when no longer needed.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>api pair</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>0</p> <div> <h4>CWE Type：CWE-404</h4> <h4>QLCode:</h4> <pre>/**
+ * @name mallocfree
+ * @description description
+ * @kind problem
+ * @problem.severity error
+ * @precision high
+ * @id cpp/memleak
+ * @tags security
+ */
+
+ import cpp
+ import semmle.code.cpp.dataflow.TaintTracking
+ import semmle.code.cpp.dataflow.DataFlow
+ import semmle.code.cpp.security.Security
+ import semmle.code.cpp.controlflow.Guards
+ import semmle.code.cpp.valuenumbering.GlobalValueNumbering
+ 
+Expr getMallocExpr(FunctionCall fc)
+{
+    exists(Expr e | 
+        result = e
+        and
+        (
+            (fc.getTarget().hasName(&quot;xmlTextReaderRelaxNGValidateCtxt&quot;) and e = fc.getArgument(0))
+        // or
+        // (fc.getTarget().hasName(&quot;new_malloc&quot;) and e = fc.getArgument(0))
+        // TODO-addMallocHere
+        )
+    )
+}
+
+Expr getFreeExpr(FunctionCall fc)
+{
+
+        result = fc.getArgument(0)
+        and
+        (
+            fc.getTarget().hasName(&quot;free&quot;)
+or fc.getTarget().hasName(&quot;xmlFreeDoc&quot;)
+or fc.getTarget().hasName(&quot;xmlXPathFreeObject&quot;)
+or fc.getTarget().hasName(&quot;xmlXPathFreeContext&quot;)
+or fc.getTarget().hasName(&quot;xmlBufferFree&quot;)
+or fc.getTarget().hasName(&quot;xmlFreeParserCtxt&quot;)
+or fc.getTarget().hasName(&quot;xmlFreeNode&quot;)
+        // or
+        //  fc.getTarget().hasName(&quot;new_free&quot;)
+        // TODO-addFreeHere
+        )
+}
+
+ predicate isSourceFC(FunctionCall fc)
+ {
+//  fc.getTarget().hasName(&quot;new_malloc&quot;)
+//  or 
+ fc.getTarget().hasName(&quot;xmlTextReaderRelaxNGValidateCtxt&quot;)
+ }
+
+ predicate isSinkFC(FunctionCall fc)
+ {
+ fc.getTarget().hasName(&quot;free&quot;)
+or fc.getTarget().hasName(&quot;xmlFreeDoc&quot;)
+or fc.getTarget().hasName(&quot;xmlXPathFreeObject&quot;)
+or fc.getTarget().hasName(&quot;xmlXPathFreeContext&quot;)
+or fc.getTarget().hasName(&quot;xmlBufferFree&quot;)
+or fc.getTarget().hasName(&quot;xmlFreeParserCtxt&quot;)
+or fc.getTarget().hasName(&quot;xmlFreeNode&quot;)
+//  or
+//  fc.getTarget().hasName(&quot;new_free&quot;)
+ }
+ DataFlow::Node getSinkNode(FunctionCall fc)
+ {
+     result.asExpr() = getFreeExpr(fc)
+     or
+     result.asDefiningArgument() = getFreeExpr(fc)
+ }
+    
+ DataFlow::Node getSourceNode(FunctionCall fc)
+ {
+     result.asExpr() = getMallocExpr(fc)
+     or
+     result.asDefiningArgument() = getMallocExpr(fc)
+ }
+ class MallocConfiguration extends DataFlow::Configuration {
+    MallocConfiguration() { this = &quot;MallocConfiguration&quot; }
+   
+     override predicate isSource(DataFlow::Node source) {
+       exists(FunctionCall fc | 
+        isSourceFC(fc)
+        and
+        source = getSourceNode(fc)
+         )
+     }
+     override predicate isSink(DataFlow::Node sink) {
+       // sink.asExpr()
+       exists(FunctionCall fc |
+         isSinkFC(fc)
+         and sink = getSinkNode(fc)
+       )
+     }
+   }
+
+ControlFlowNode getTargetNode() {
+    exists(FunctionCall target | 
+    isSourceFC(target)
+    and result = target
+    )
+}
+   
+ControlFlowNode getAfterNode(ControlFlowNode target) {
+    isSourceFC(target)
+    and
+    exists(FunctionCall fc | 
+        target.getASuccessor*() = fc
+        and result = fc
+        and isSinkFC(fc)
+        and exists(MallocConfiguration cfg| 
+            cfg.hasFlow(getSourceNode(target), getSinkNode(fc))
+            )
+        )
+}
+
+
+// return True说明该node是 conditional的，会leak
+predicate isConditionalAfter(ControlFlowNode node, ControlFlowNode target) {
+    target = getTargetNode()
+    and
+    node = getAfterNode(target)
+    and
+    exists(BasicBlock bb | 
+        bb.getAPredecessor().getANode() = node
+        and bb.getAPredecessor().getANode() = target
+        )
+}
+
+ //   if every path after target exists node
+BasicBlock getLeakBBAfter(ControlFlowNode target) {
+     not exists(ControlFlowNode node | 
+        node = getAfterNode(target)
+        and (not
+        exists(BasicBlock bb | 
+            not bb.getANode() = node
+            and bb = target.getASuccessor*()
+            and exists(ExitBasicBlock exit | 
+                bb.getASuccessor*() = exit)
+            and target.getASuccessor*() = bb
+            and not bb.getAPredecessor*() = node.getBasicBlock()
+            and not bb.getASuccessor*() = node.getBasicBlock()
+            and result = bb
+         )
+         and not isConditionalAfter(node, target)
+        )
+     )
+    
+ }
+ 
+ 
+ predicate isLocalVariable(Expr e) {
+    exists(FunctionCall fc| 
+        fc = e 
+        and
+        exists(AssignExpr ae, LocalVariable lv| 
+        ae.getAChild() = fc 
+        and lv.getAnAccess() = ae.getLValue()
+        )
+        or exists(LocalVariable lv| 
+            lv.getInitializer().getExpr() = e
+            )
+    )
+        or
+
+     exists(LocalVariable lv | 
+        
+            lv.getAnAccess() = e.getAChild*()
+            )
+ }
+
+ 
+ from FunctionCall target
+ where
+ target = getTargetNode()
+ and 
+isLocalVariable(getMallocExpr(target))
+ 
+//  and after.getTarget().hasName(&quot;free&quot;)
+ // and not exists(Expr check| check=getCheckExpr(target))
+ and exists(BasicBlock bb | bb = getLeakBBAfter(target) )
+ select target, target.getLocation().toString()</pre> </div> </main> </body></html>

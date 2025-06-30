@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advance - openssl - RSA_private_decrypt</title></head> <body> <header> <h1>Advance - openssl - RSA_private_decrypt</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>to must point to RSA_size(rsa) bytes of memory.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>buffer overflow</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：</h4> <h4>QLCode:</h4> <pre>import cpp
+import semmle.code.cpp.dataflow.TaintTracking
+import semmle.code.cpp.dataflow.DataFlow
+import semmle.code.cpp.security.Security
+import DataFlow::PathGraph
+class TestConfiguration extends TaintTracking::Configuration {
+  TestConfiguration() { this = &quot;TestConfiguration&quot; }
+
+  override predicate isSource(DataFlow::Node source) {
+    exists(FunctionCall fc |source.asExpr() = fc and fc.getTarget().getName().matches(&quot;%alloc%&quot;))
+    or source.asExpr().getType() instanceof ArrayType
+  }
+
+  override predicate isSink(DataFlow::Node sink) {
+    exists(FunctionCall fc |
+      fc.getTarget().hasName(&quot;RSA_private_decrypt&quot;)
+      and fc.getArgument(2) = sink.asExpr()
+    )
+  }
+}
+from TestConfiguration cfg, FunctionCall fc
+where fc.getTarget().hasName(&quot;RSA_private_decrypt&quot;)
+  and not exists(DataFlow::PathNode source, DataFlow::PathNode sink, FunctionCall fc2|
+      cfg.hasFlowPath(source, sink)
+      //RSA_size(host_pkey-&gt;pkey.rsa)
+      and fc2.getTarget().hasName(&quot;RSA_size&quot;)
+      and fc2.getArgument(0) = fc.getArgument(3)
+      //RSA_private_decrypt(, RSA_size(), )
+      and source.getNode().asExpr() = fc2
+  )
+select fc.getLocation()</pre> </div> </main> </body></html>

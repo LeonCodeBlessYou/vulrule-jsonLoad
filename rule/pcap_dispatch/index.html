@@ -1,0 +1,91 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advance - libpcap - pcap_dispatch</title></head> <body> <header> <h1>Advance - libpcap - pcap_dispatch</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>pcap_dispatch() returns the number of packets processed on success; this can be 0 if no packets were read from a live capture or if no more packets are available in a ``savefile.&#39;&#39; It returns PCAP_ERROR if an error occurs or PCAP_ERROR_BREAK if the loop terminated due to a call to pcap_breakloop() before any packets were processed.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>return value check</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>import semmle.code.cpp.dataflow.DataFlow
+class TestConfiguration extends DataFlow::Configuration {
+    TestConfiguration() { this = &quot;TestConfiguration&quot; }
+    override predicate isSource(DataFlow::Node source) {
+        exists(FunctionCall fc,  MacroInvocation mi |
+            (fc.getTarget().hasQualifiedName(&quot;pcap_dispatch&quot;) or (
+                mi.getMacroName() = &quot;pcap_dispatch&quot;
+                and fc.getTarget().hasName(mi.getMacro().getBody())
+              )
+            )
+            and fc = source.asExpr()
+        )
+    }
+    override predicate isSink(DataFlow::Node sink) {
+        exists(| sink.asExpr().getEnclosingStmt() instanceof IfStmt
+            and (sink.asExpr().getParent() instanceof ComparisonOperation
+                or sink.asExpr().getParent() instanceof NotExpr
+                or sink.asExpr().getParent() instanceof IfStmt
+            )
+        )
+    }
+}
+
+predicate equality(Expr sink){
+    exists(ComparisonOperation cmp| sink.getParent() instanceof ComparisonOperation and
+        cmp = sink.getParent().(ComparisonOperation) and
+        (cmp.getOperator().toString() = &quot;==&quot; or cmp.getOperator().toString() = &quot;!=&quot;) and not (
+            (cmp.getLeftOperand() = sink and (cmp.getRightOperand().toString().toInt() = max(int f | f in [-2, -1, 0]) or cmp.getRightOperand().toString().toInt() = min(int f | f in [-2, -1, 0])))
+            or
+            (cmp.getRightOperand() = sink and (cmp.getLeftOperand().toString().toInt() = max(int f | f in [-2, -1, 0]) or cmp.getLeftOperand().toString().toInt() = min(int f | f in [-2, -1, 0])))
+        )
+    )
+}
+
+predicate less_than_equal(Expr sink){
+    exists(ComparisonOperation cmp| 1 = 1 and sink.getParent() instanceof ComparisonOperation and
+        cmp = sink.getParent().(ComparisonOperation) and (
+            (cmp.getOperator().toString() = &quot;&lt;&quot; and not (
+                (cmp.getLeftOperand() = sink and cmp.getRightOperand().toString().toInt() = 1 ) or
+                (cmp.getRightOperand() = sink and cmp.getLeftOperand().toString().toInt() = 1 )
+                )
+            ) or (
+            cmp.getOperator().toString() = &quot;&lt;=&quot; and not (
+                (cmp.getLeftOperand() = sink and cmp.getRightOperand().toString().toInt() = 1-1 ) or
+                (cmp.getRightOperand() = sink and cmp.getLeftOperand().toString().toInt() = 1-1 )
+                )
+            )
+        )
+    )
+}
+
+predicate more_than_equal(Expr sink){
+    exists(ComparisonOperation cmp| 1 = 1 and sink.getParent() instanceof ComparisonOperation and
+        cmp = sink.getParent().(ComparisonOperation) and (
+            (cmp.getOperator().toString() = &quot;&gt;&quot; and not (
+                (cmp.getLeftOperand() = sink and cmp.getRightOperand().toString().toInt() = -1 ) or
+                (cmp.getRightOperand() = sink and cmp.getLeftOperand().toString().toInt() = -1 )
+                )
+            ) or (
+            cmp.getOperator().toString() = &quot;&gt;=&quot; and not (
+                (cmp.getLeftOperand() = sink and cmp.getRightOperand().toString().toInt() = -1+1 ) or
+                (cmp.getRightOperand() = sink and cmp.getLeftOperand().toString().toInt() = -1+1 )
+                )
+            )
+        )
+    )
+}
+
+predicate not_qual(Expr sink){
+    exists(| sink.getParent() instanceof NotExpr and
+        not (max(int f | f in [-2, -1, 0]) = 0 or min(int f | f in [-2, -1, 0]) = 0)
+    )
+}
+
+predicate org_value(Expr sink) {
+    exists(|sink.getParent() instanceof IfStmt and
+        not (max(int f | f in [-2, -1, 0]) = 0 or min(int f | f in [-2, -1, 0]) = 0)
+    )
+}
+from TestConfiguration cfg, Expr source, Expr sink, FunctionCall fc, MacroInvocation mi
+where (fc.getTarget().hasQualifiedName(&quot;pcap_dispatch&quot;) or (
+        mi.getMacroName() = &quot;pcap_dispatch&quot;
+        and fc.getTarget().hasName(mi.getMacro().getBody())
+    ))
+    and (
+        //wrongly check
+        cfg.hasFlow(DataFlow::exprNode(source), DataFlow::exprNode(sink))
+        and fc = source
+        and (equality(sink) or less_than_equal(sink) or more_than_equal(sink) or not_qual(sink) or org_value(sink) )
+      )
+select fc.getLocation()</pre> </div> </main> </body></html>

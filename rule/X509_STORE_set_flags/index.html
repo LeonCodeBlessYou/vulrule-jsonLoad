@@ -1,0 +1,175 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GPTAid - openssl - X509_STORE_set_flags</title></head> <body> <header> <h1>GPTAid - openssl - X509_STORE_set_flags</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>Parameter 1 must be initialized.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>initialization</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>0</p> <div> <h4>CWE Type：CWE-457</h4> <h4>QLCode:</h4> <pre>/**
+ * @name uninitialize
+ * @description description
+ * @kind problem
+ * @problem.severity error
+ * @precision high
+ * @id cpp/uninitialize
+ * @tags security
+ */
+
+ import cpp
+ import semmle.code.cpp.dataflow.TaintTracking
+ import semmle.code.cpp.dataflow.DataFlow
+ import semmle.code.cpp.security.Security
+ import semmle.code.cpp.controlflow.Guards
+ import semmle.code.cpp.valuenumbering.GlobalValueNumbering
+
+ predicate isSourceFC(FunctionCall fc)
+ {
+ fc.getTarget().hasName(&quot;initialize&quot;)
+ or fc.getTarget().hasName(&quot;OPENSSL_sk_reserve&quot;)
+ or fc.getTarget().hasName(&quot;PKCS12_parse&quot;)
+ or fc.getTarget().hasName(&quot;EVP_PKEY_get_bn_param&quot;)
+ or fc.getTarget().hasName(&quot;X509_STORE_add_cert&quot;)
+ }
+
+//  DataFlow::Node getSourceNode(FunctionCall fc)
+//  {
+//      result.asExpr() = getMallocExpr(fc)
+//      or
+//      result.asDefiningArgument() = getMallocExpr(fc)
+//  }
+
+ Expr getSinkExpr(FunctionCall fc)
+ {
+    isSinkFC(fc)
+    and
+ result = fc.getArgument(0) 
+ }
+ 
+ predicate isSinkFC(FunctionCall fc)
+ {
+ fc.getTarget().hasName(&quot;X509_STORE_set_flags&quot;)
+ }
+ DataFlow::Node getSinkNode(FunctionCall fc)
+ {
+     result.asExpr() = getSinkExpr(fc)
+     or
+     result.asDefiningArgument() = getSinkExpr(fc)
+ }
+    
+ class ParameterConfiguration extends DataFlow::Configuration {
+     ParameterConfiguration() { this = &quot;ParameterConfiguration&quot; }
+   
+     override predicate isSource(DataFlow::Node source) {
+        exists(FunctionCall fc | 
+            isSourceFC(fc)
+            and
+            (source.asExpr() = fc
+            or
+            source.asExpr() = fc.getAnArgument()
+            or
+            source.asDefiningArgument() = fc.getAnArgument())
+            )
+        
+     }
+     override predicate isSink(DataFlow::Node sink) {
+       // sink.asExpr()
+       exists(FunctionCall fc |
+         isSinkFC(fc)
+         and sink = getSinkNode(fc)
+       )
+     }
+   }
+   predicate isFlow(Expr source, Expr sink) {
+    exists(ParameterConfiguration cfg | 
+            cfg.hasFlow(DataFlow::exprNode(source), DataFlow::exprNode(sink))
+        )
+    
+}
+
+// predicate isFlow(Expr source, Expr sink) {
+//     exists(FunctionCall sourcefc, FunctionCall sinkfc| 
+//         isSourceFC(sourcefc)
+//         and isSinkFC(sinkfc)
+//         and (source = sourcefc.getAnArgument() or source = sourcefc)
+//         and sink = getSinkExpr(sinkfc)
+//         and exists(ParameterConfiguration cfg | 
+//             cfg.hasFlow(DataFlow::exprNode(source), getSinkNode(sinkfc))
+//             )
+//         )
+    
+// }
+   
+ControlFlowNode getTargetNode() {
+    exists(FunctionCall target | 
+        isSinkFC(target)
+    // target.getTarget().hasName(&quot;free&quot;)
+    and result = target
+    )
+}
+
+ControlFlowNode getBeforeNode(FunctionCall target) {
+    exists(FunctionCall sourcefc, ParameterConfiguration cfg, Expr source| 
+        isSourceFC(sourcefc)
+        and (source = sourcefc or source = sourcefc.getAnArgument())
+        and
+        cfg.hasFlow(DataFlow::exprNode(source), getSinkNode(target))
+        and target.getAPredecessor*() = source
+        // and not e = target.getAnArgument()
+        and result = sourcefc)
+}
+
+// return True说明该node是 conditional的，会leak
+predicate isConditionalBefore(ControlFlowNode node, ControlFlowNode target) {
+    target = getTargetNode()
+    and
+    node = getBeforeNode(target)
+    and not node.getBasicBlock() = target.getBasicBlock()
+    and
+    exists(BasicBlock bb | 
+        bb.getASuccessor().getANode() = node
+        and bb.getASuccessor().getANode() = target
+        
+        )
+}
+
+
+BasicBlock getLeakBBBefore(ControlFlowNode target) {
+    isSinkFC(target)
+    and
+    // result.getASuccessor*() = target
+    // and
+    not exists(ControlFlowNode node | 
+        node = getBeforeNode(target)
+        and (not
+        exists(BasicBlock bb | 
+            bb.getASuccessor*() = target
+            // and bb.getAPredecessor*() = node
+            and not bb.getANode() = node
+        and result = bb
+        and not bb.getAPredecessor*() = node.getBasicBlock()
+        and not bb.getASuccessor*() = node.getBasicBlock()
+        )
+        and not isConditionalBefore(node, target)
+        )
+        )
+}
+
+ 
+ predicate isLocalVariable(Expr e) {
+    exists(LocalVariable lv | 
+       exists(FunctionCall fc| 
+           fc = e and
+           exists(AssignExpr ae | 
+           ae.getAChild() = fc and lv.getAnAccess() = ae.getLValue())
+       )
+           or
+           lv.getAnAccess() = e
+           )
+}
+ 
+
+ 
+ 
+ from FunctionCall target
+ where
+ target = getTargetNode()
+ and
+ isLocalVariable(getSinkExpr(target))
+//  and after.getTarget().hasName(&quot;free&quot;)
+ // and not exists(Expr check| check=getCheckExpr(target))
+ and exists(BasicBlock bb | bb = getLeakBBBefore(target))
+ select target, target.getLocation().toString()
+ </pre> </div> </main> </body></html>

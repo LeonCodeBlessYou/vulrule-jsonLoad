@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advance - libdbus - dbus_message_iter_get_signature</title></head> <body> <header> <h1>Advance - libdbus - dbus_message_iter_get_signature</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>The returned string must be freed with dbus_free().</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>mem leakage</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-772</h4> <h4>QLCode:</h4> <pre>import semmle.code.cpp.dataflow.DataFlow
+
+class Configuration extends DataFlow::Configuration {
+  Configuration() { this = &quot;Configuration&quot; }
+  override predicate isSource(DataFlow::Node source) { 
+     exists (FunctionCall fc | source.asExpr().(FunctionCall) = fc 
+     and fc.getTarget().getQualifiedName() = &quot;dbus_message_iter_get_signature&quot;)
+ }
+  override predicate isSink(DataFlow::Node sink) {
+    exists (FunctionCall fc |
+      sink.asExpr() = fc.getAnArgument() 
+      and fc.getTarget().hasQualifiedName(&quot;dbus_free&quot;)
+    )
+  }
+}
+
+from Configuration config, FunctionCall fc
+where fc.getTarget().hasQualifiedName(&quot;dbus_message_iter_get_signature&quot;)
+      and not exists(
+        Expr dataSrc, Expr dataDest | config.hasFlow(DataFlow::exprNode(dataSrc), DataFlow::exprNode(dataDest)) 
+        and fc = dataSrc.(FunctionCall))
+select fc.getLocation()</pre> </div> </main> </body></html>

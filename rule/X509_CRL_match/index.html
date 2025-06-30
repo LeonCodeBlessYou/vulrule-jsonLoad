@@ -1,0 +1,13 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AURC - openssl - X509_CRL_match</title></head> <body> <header> <h1>AURC - openssl - X509_CRL_match</h1> <nav> <a href="/">Return to Homepage</a> </nav> </header> <main> <h2>Rule Profile</h2> <p><strong>Description: </strong>X509_NAME_cmp(), X509_issuer_and_serial_cmp(), X509_issuer_name_cmp(), X509_subject_name_cmp(), X509_CRL_cmp(), and X509_CRL_match() may return B&lt;-2&gt; to indicate an error.</p> <!-- 检查并显示 Label --> <p><strong>Label: </strong>return value check</p> <!-- 检查并显示 Parameter-index --> <p><strong>Parameter Index: </strong>N/A</p> <div> <h4>CWE Type：CWE-253</h4> <h4>QLCode:</h4> <pre>import cpp
+
+class OpenSSLFunctionCall extends FunctionCall {
+  OpenSSLFunctionCall() {
+    this.getTarget().hasName(&quot;X509_CRL_match&quot;)
+  }
+}
+
+from OpenSSLFunctionCall call, UnaryOperation uop
+where
+  uop.getOperator() = &quot;!&quot; and
+  uop.getOperand() = call.getAnAccess()
+select uop, &quot;This negation checks the return value of X509_CRL_match.&quot;</pre> </div> </main> </body></html>
