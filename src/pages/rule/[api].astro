@@ -1,0 +1,55 @@
+---
+import { json } from '@astro/types';
+import data from '../../data/data.json';
+
+// getStaticPaths 函数，返回所有可用的路径
+export async function getStaticPaths() {
+  const paths = data.map(rule => ({
+    params: { api: rule.api_name },  // 这是动态路由中的参数
+  }));
+  return paths; // 返回一个数组而不是对象
+}
+
+const { api } = Astro.params;  // 获取 URL 中的 api_name 参数
+const rule = data.find(r => r.api_name === api); // 根据 api_name 查找对应的规则
+
+if (!rule) {
+  throw new Error(`Rule Not Found：${api}`);
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{rule.tool_name} - {rule.lib_name} - {rule.api_name}</title>
+</head>
+<body>
+  <header>
+    <h1>{rule.tool_name} - {rule.lib_name} - {rule.api_name}</h1>
+    <nav>
+      <a href="/">Return to Homepage</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Rule Profile</h2>
+    <p><strong>Description: </strong>{rule.rule.Description}</p>
+
+    <!-- 检查并显示 Label -->
+    <p><strong>Label: </strong>{Array.isArray(rule.rule.Label) ? rule.rule.Label.join(', ') : 'N/A'}</p>
+
+    <!-- 检查并显示 Parameter-index -->
+    <p><strong>Parameter Index: </strong>{Array.isArray(rule.rule['Parameter-index']) ? rule.rule['Parameter-index'].join(', ') : 'N/A'}</p>
+
+    {rule.rule['cweType-and-QLCode'].map(cwe => (
+      <div>
+        <h4>CWE Type：{Array.isArray(cwe.cweType) ? cwe.cweType.join(', ') : 'N/A'}</h4>
+        <h4>QLCode:</h4>
+        <pre>{cwe.QLCode}</pre>
+      </div>
+    ))}
+  </main>
+</body>
+</html>
