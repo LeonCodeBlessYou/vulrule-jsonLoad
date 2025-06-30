@@ -20,11 +20,11 @@ const rule = rules.find(r => r.api_name === normalizedApi || r.api_name === api)
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{rule.tool_name} - {rule.lib_name} - {rule.api_name}</title>
+  <title>{rule.lib_name} - {rule.tool_name} - {rule.api_name}</title>
 </head>
 <body>
   <header>
-    <h1>{rule.tool_name} - {rule.lib_name} - {rule.api_name}</h1>
+    <h1>{rule.lib_name} - {rule.tool_name} - {rule.api_name}</h1>
     <nav>
       <a href={import.meta.env.BASE_URL}>Return to Homepage</a>
     </nav>
