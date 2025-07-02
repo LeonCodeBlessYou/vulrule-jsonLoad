@@ -12,6 +12,82 @@ npm run build
 npm run deploy
 ```
 
+# Public JSON API
+We provide a public JSON API for researchers and developers.
+
+## Get All Rules
+
+You can fetch all the rules in JSON format via the following endpoint:
+
+```
+GET https://leoncodeblessyou.github.io/vulrule-jsonLoad/api/rules.json
+```
+
+This endpoint returns the entire rule dataset as a JSON array.
+
+---
+
+## Sample Response (truncated)
+
+```json
+[
+  {
+    "tool_name": "CodeQL",
+    "lib_name": "libdbus",
+    "api_name": "_dbus_connection_new_for_transport",
+    "title": "Use-after-free in dbus",
+    "rule": {
+      "Description": "Checks if ...",
+      "Label": ["security", "memory"],
+      "Parameter-index": [0],
+      "cweType-and-QLCode": [
+        {
+          "cweType": ["CWE-416"],
+          "QLCode": "..."
+        }
+      ]
+    }
+  },
+  ...
+]
+```
+
+---
+
+## How to Use the API
+
+### Python Example
+
+```python
+import requests
+
+url = "https://leoncodeblessyou.github.io/vulrule-jsonLoad/api/rules.json"
+response = requests.get(url)
+
+if response.ok:
+    rules = response.json()
+    print("Total rules:", len(rules))
+    print("First rule:", rules[0]["api_name"])
+else:
+    print("Failed to fetch rules:", response.status_code)
+```
+
+### Command-line (curl)
+
+```bash
+curl https://leoncodeblessyou.github.io/vulrule-jsonLoad/api/rules.json -o rules.json
+```
+
+---
+
+### 📎 Notes
+
+- This is a **static API** hosted on GitHub Pages.
+- The data is auto-generated from [`./src/data/data.json`](./src/data/data.json).
+- If you want to contribute or request additional endpoints (e.g. per-rule query), feel free to open an issue.
+---
+---
+
 
 # Astro Starter Kit: Minimal
 
