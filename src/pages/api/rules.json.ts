@@ -6,7 +6,8 @@ export function GET() {
     {
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*', // 允许跨域访问
+        // 允许跨域访问
+        'Access-Control-Allow-Origin': '*', 
       },
     }
   );

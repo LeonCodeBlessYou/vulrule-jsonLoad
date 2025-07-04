@@ -3,7 +3,6 @@ import { json } from '@astro/types';
 import data from '../data/data.json';
 
 const rules = data;
-
 const categorizedRules = rules.reduce((acc, rule) => {
   if (!acc[rule.lib_name]) {
     acc[rule.lib_name] = {};
